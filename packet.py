@@ -46,6 +46,9 @@ class Packet:
             Raises:
                 ValueError: if packet is too short or too long or invalid peer address.
         """
+
+        print(f"raw ===> {raw}")
+
         if len(raw) < MIN_LEN:
             raise ValueError("packet is too short: {} bytes".format(len(raw)))
         if len(raw) > MAX_LEN:

@@ -2,16 +2,21 @@ import argparse
 import socket
 import pickle
 from time import sleep
+import ipaddress
 
 from packet import Packet
 from threeWayHandshaking import ThreeWayHandshake
+from server_sr import server_program
 
 
 def run_server(port):
+    client_addr = ''
+    client_port = 0
+    peer_ip = None
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind(('', port))
     print('Echo server is listening at', port)
-    print("wating for connection")
+    print("waiting for connection")
 
     # Three Way HandShaking
     # con = (sock.accept()[0])
@@ -26,7 +31,13 @@ def run_server(port):
         packetData = Packet.from_bytes(data)
         str_obj = packetData.payload.decode()
 
-        print(f"packetData - {packetData} :: packetData.peer_ip_addr - {packetData.peer_ip_addr} :: packetData.peer_port - {packetData.peer_port}")
+        print(f"packetData - {packetData} :: packetData.peer_ip_addr - {packetData.peer_ip_addr} "
+              f":: packetData.peer_port - {packetData.peer_port}")
+
+        client_addr = packetData.peer_ip_addr
+        client_port = packetData.peer_port
+        peer_ip = ipaddress.ip_address(socket.gethostbyname(str(client_addr)))
+
         del data
 
         print(f"str_obj ====> {str_obj}")
@@ -36,6 +47,8 @@ def run_server(port):
         conn1 = ThreeWayHandshake(str_obj[str_obj.find(': ') + 2: str_obj.find(',')], str_obj[str_obj.find('established: ') + 13: str_obj.find('.')])
         p = conn1.connection(packetData.peer_ip_addr, packetData.peer_port)
         address = ('127.0.0.1', 3000)
+
+        print(f"conn1.connected ====> {conn1.connected}")
 
         if conn1.connected is True:
             print(f"conn1.connected ====> {conn1.connected}")
@@ -50,9 +63,10 @@ def run_server(port):
 
     if connection:
         try:
-            while True:
-                data, sender = sock.recvfrom(1024)
-                handle_client(sock, data, sender)
+            # while True:
+            #     data, sender = sock.recvfrom(1024)
+            #     handle_client(sock, data, sender)
+            server_program(sock, peer_ip, client_port, '127.0.0.1', 3000)
 
         finally:
             sock.close()

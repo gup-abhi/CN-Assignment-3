@@ -25,20 +25,20 @@ class ThreeWayHandshake:
 
     def connection(self, peer_ip_addr, peer_port):
         if self.status is None:
-            # print("starting 3-way handshake", "status: sync", sep="\n")
+            print("starting 3-way handshake", "status: sync", sep="\n")
             self.status = "sync"
             return create_packet(0, 1, peer_ip_addr, peer_port, self)
         elif self.status == "sync":
-            # print("sync received", "sending status: ack-sync", sep="\n")
+            print("sync received", "sending status: ack-sync", sep="\n")
             self.status = "ack-sync"
             return create_packet(0, 1, peer_ip_addr, peer_port, self)
         elif self.status == "ack-sync":
-            # print("ack-sync received", "sending status: ack", sep="\n")
+            print("ack-sync received", "sending status: ack", sep="\n")
             self.status = "ack"
             return create_packet(0, 1, peer_ip_addr, peer_port, self)
         elif self.status == "ack":
             self.connected = True
-            # print("Connected.")
+            print("Connected.")
 
     # def connected(self):
     #     return self.connected

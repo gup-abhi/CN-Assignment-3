@@ -6,6 +6,7 @@ from time import sleep
 
 from packet import Packet
 from threeWayHandshaking import ThreeWayHandshake
+from client_sr import client_program
 
 
 def run_client(router_addr, router_port, server_addr, server_port):
@@ -18,19 +19,26 @@ def run_client(router_addr, router_port, server_addr, server_port):
     conn1 = ThreeWayHandshake()
     # print("before", conn1)
     # conn.connect((server_addr, server_port))
-    p = conn1.connection(peer_ip, server_port)
+    # p = conn1.connection(peer_ip, server_port)
 
     while conn1.connected is not True:
-        conn1 = ThreeWayHandshake(conn1.status, conn1.connected)
+        # conn1 = ThreeWayHandshake(conn1.status, conn1.connected)
+        p = conn1.connection(peer_ip, server_port)
+
         print(f'conn1.connected ====> {conn1.connected}')
         print("Client side packet:", p)
 
         print(f"Status ====> {conn1.status} :: Connected ====> {conn1.connected}")
 
-        if conn1.connected is True:
-            break
+        # if conn1.status == 'ack':
+        #     conn1.connected = True
+        #     break
 
         conn.sendto(p.to_bytes(), (router_addr, router_port))
+
+        if conn1.status == 'ack':
+            conn1.connected = True
+            break
 
         del conn1
 
@@ -52,30 +60,31 @@ def run_client(router_addr, router_port, server_addr, server_port):
 
         conn1 = ThreeWayHandshake(status, connected)
 
-        p = conn1.connection(peer_ip, server_port)
         sleep(3)
 
+    print(f"conn1.connected ====> {conn1.connected}")
     print("3-way done.") if conn1.connected is True else print("3-way not done")
 
     if conn1.connected:
         try:
-            msg = "Hello World"
-            p = Packet(packet_type=0,
-                       seq_num=1,
-                       peer_ip_addr=peer_ip,
-                       peer_port=server_port,
-                       payload=msg.encode("utf-8"))
-            conn.sendto(p.to_bytes(), (router_addr, router_port))
-            print('Send "{}" to router'.format(msg))
-
-            # Try to receive a response within timeout
-            conn.settimeout(timeout)
-            print('Waiting for a response')
-            response, sender = conn.recvfrom(1024)
-            p = Packet.from_bytes(response)
-            print('Router: ', sender)
-            print('Packet: ', p)
-            print('Payload: ' + p.payload.decode("utf-8"))
+            client_program(conn, router_addr, router_port, peer_ip, server_port)
+            # msg = "Hello World"
+            # p = Packet(packet_type=0,
+            #            seq_num=1,
+            #            peer_ip_addr=peer_ip,
+            #            peer_port=server_port,
+            #            payload=msg.encode("utf-8"))
+            # conn.sendto(p.to_bytes(), (router_addr, router_port))
+            # print('Send "{}" to router'.format(msg))
+            #
+            # # Try to receive a response within timeout
+            # conn.settimeout(timeout)
+            # print('Waiting for a response')
+            # response, sender = conn.recvfrom(1024)
+            # p = Packet.from_bytes(response)
+            # print('Router: ', sender)
+            # print('Packet: ', p)
+            # print('Payload: ' + p.payload.decode("utf-8"))
 
         except socket.timeout:
             print('No response after {}s'.format(timeout))
