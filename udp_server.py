@@ -70,6 +70,7 @@ def run_server(port):
 
         finally:
             sock.close()
+            run_server(8007)
 
 
 def handle_client(conn, data, sender):

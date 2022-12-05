@@ -1,86 +1,126 @@
-import random
-
 from packet import Packet
+from time import sleep
 
+from get import get_data
+from post import post_data
 
-def server_program(conn, client_addr, client_port, router_addr, router_port):
-    # get the hostname
-    # host = socket.gethostname()
-    # port = 12344  # initiate port no above 1024
-    exp = 0
-    ack_counter = 0
-    n = 4
-    new = 1
-    win_start = 0
+def server_program(client_socket, server_addr, server_port, router_addr, router_port, n=4, win_start=0, sender=[], flag=0):
+    n = n
+    win_start = win_start
     win_end = win_start + n - 1
-    receiver = ['', '', '', '']
-    # server_socket = socket.socket()  # get instance
-    # look closely. The bind() function takes tuple as argument
-    # server_socket.bind((host, port))  # bind host address and port together
 
-    # configure how many client the server can listen simultaneously
-    # server_socket.listen(2)
-    # conn, address = server_socket.accept()  # accept new connection
-    # print("Connection from: ", str(address))
-    while True:
-        # receive data stream. it won't accept data packet greater than 1024 bytes
-        data = conn.recv(1024)
-        if not data:
-            # if data is not received break
-            break
+    sender = sender
+    # send whole sender list else 1 means send only win_start frame
+    flag = flag
 
-        data = Packet.from_bytes(data)
-        print(f"data received ====> {data} :: seq_num ====> {data.seq_num}")
-        rec = int(data.seq_num)
-        # lim = rec + n - 1
-        # count = 0
-        flag = 0
-        ack = rec
+    sleep(5)
+    received_data = client_socket.recv(1024)  # receive NAK
+    data = Packet.from_bytes(received_data)
+    print(f"data ====> {data} :: type(data) ====> {type(data)}")
 
-        # randy = random.randint(1, 4)
-        if new == 1:  # you received a new frame of a new window
-            print("Received Frame -> ", rec)
-            receiver[data.seq_num] = data
-            # while count != randy:
-            #     temp = random.randint(rec, lim)
-            #
-            #     if temp not in receiver:
-            #         print("Received Frame -> ", temp)
-            #
-            #         count += 1
-            #         flag = 1  # Atleast one new frame added in receiver buffer
-            #         receiver.append(temp)
-            ack = data.seq_num + 1
-            # ack_counter += 1
-        else:
-            print("Received Frame -> ", rec)  # you received a new frame of an old window
-            receiver[data.seq_num] = data
-            # flag = 1
-            # if flag == 1:
-            #     for i in range(rec, lim + 1):
-            #         if i not in receiver:
-            #             ack = i
-            #             break
-            #         ack = i + 1
-            ack = data.seq_num + 1
-            # ack_counter += 1
+    msg = str(data.seq_num)
+    ack = int(msg)
 
-        print("Sending ACK    -> ", ack)  # next expected frame
-        print('***************************************************')
+    p = Packet(packet_type=0,
+               seq_num=ack,
+               peer_ip_addr=server_addr,
+               peer_port=server_port,
+               payload=msg.encode("utf-8"))
+    sender.append(p)
+    print(f"server_addr ====> {server_addr} :: server_port ====> {server_port}")
+    client_socket.sendto(p.to_bytes(), (router_addr, router_port))  # send message
 
-        data = str(ack)
-        p = Packet(packet_type=0,
-                   seq_num=ack,
-                   peer_ip_addr=client_addr,
-                   peer_port=client_port,
-                   payload=data.encode("utf-8"))
-        conn.sendto(p.to_bytes(), (router_addr, router_port))  # send data to the client
+    request = str(data.payload.decode())
+    if request.split(" ")[0] == 'get':
+        response = get_data(request)
+    else:
+        response = post_data(request)
 
-        if ack > win_end:
-            win_start = ack
-            win_end = win_start + n - 1
-            new = 1  # now receive a new frame of a new window
-        else:
-            new = 0  # now received a new frame of an old window
+    print(f"response - {response}")
 
-        # conn.close()  # close the connection
+    msg = str(response)
+    p = Packet(packet_type=0,
+               seq_num=1,
+               peer_ip_addr=server_addr,
+               peer_port=server_port,
+               payload=msg.encode("utf-8"))
+    sender.append(p)
+    print(f"server_addr ====> {server_addr} :: server_port ====> {server_port}")
+    client_socket.sendto(p.to_bytes(), (router_addr, router_port))  # send message
+
+    sleep(5)
+    received_data = client_socket.recv(1024)  # receive NAK
+    data = Packet.from_bytes(received_data)
+    print(f"data ====> {data} :: type(data) ====> {type(data)}")
+
+    msg = str(data.seq_num)
+    ack = int(msg)
+
+    print(f"ack - {ack}")
+
+    # sleep(30)
+    return
+
+
+    # print('Window Size is ', n)
+    # print('******** Enter "bye" to close connection ***************')
+
+    # while message.lower().strip() != 'bye':
+    # print("Sending frames...")
+    # if flag == 0:
+    #     for i in range(n):
+    #         msg = str(win_start)
+    #         p = Packet(packet_type=0,
+    #                    seq_num=i,
+    #                    peer_ip_addr=server_addr,
+    #                    peer_port=server_port,
+    #                    payload=msg.encode("utf-8"))
+    #         sender.append(p)
+    #         print(f"server_addr ====> {server_addr} :: server_port ====> {server_port}")
+    #         client_socket.sendto(p.to_bytes(), (router_addr, router_port))  # send message
+    #     for i in sender:
+    #         print("Frame -> ", i)
+    # else:
+    #     print("Frame -> ", win_start)
+    #
+    # ack = 0
+    # counter = 0
+    #
+    # while True:
+    #     received_data = client_socket.recv(1024)  # receive NAK
+    #
+    #     data = Packet.from_bytes(received_data)
+    #
+    #     print(f"data ====> {data} :: type(data) ====> {type(data)}")
+    #
+    #     msg = str(data.seq_num)
+    #     ack = int(msg)
+    #
+    #     if ack == 4:
+    #         print("Breaking Loop")
+    #         break
+    #     else:
+    #         print("Waiting for other frames =====>")
+    #         sleep(3)
+    #
+    #     counter += 1
+    #
+    #     if counter == 4:
+    #         print("Timeout")
+    #         break
+    #
+    # print(f"ack - {ack}")
+    #
+    # if ack > len(sender):
+    #     win_start = ack
+    #     win_end = win_start + n - 1
+    #     flag = 0  # send new frame
+    #     for i in range(n):
+    #         sender.pop()
+    # else:
+    #     win_start = int(msg)
+    #     flag = 1  # send old frame
+    #     server_program(client_socket, router_addr, router_port, server_addr, server_port, 4, win_start, sender, flag)
+    #
+    # print("************************************")
+    # print(f'Received ACK server: {data}')  # show in terminal

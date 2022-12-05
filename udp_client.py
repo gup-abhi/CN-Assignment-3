@@ -7,6 +7,7 @@ from time import sleep
 from packet import Packet
 from threeWayHandshaking import ThreeWayHandshake
 from client_sr import client_program
+from get import get_data
 
 
 def run_client(router_addr, router_port, server_addr, server_port):
@@ -67,24 +68,12 @@ def run_client(router_addr, router_port, server_addr, server_port):
 
     if conn1.connected:
         try:
-            client_program(conn, router_addr, router_port, peer_ip, server_port)
-            # msg = "Hello World"
-            # p = Packet(packet_type=0,
-            #            seq_num=1,
-            #            peer_ip_addr=peer_ip,
-            #            peer_port=server_port,
-            #            payload=msg.encode("utf-8"))
-            # conn.sendto(p.to_bytes(), (router_addr, router_port))
-            # print('Send "{}" to router'.format(msg))
-            #
-            # # Try to receive a response within timeout
-            # conn.settimeout(timeout)
-            # print('Waiting for a response')
-            # response, sender = conn.recvfrom(1024)
-            # p = Packet.from_bytes(response)
-            # print('Router: ', sender)
-            # print('Packet: ', p)
-            # print('Payload: ' + p.payload.decode("utf-8"))
+            print("Send request")
+            request = input("Enter the request to be sent to the server: ")
+
+            print(f"request ====> {request}")
+            # client_program(conn, router_addr, router_port, peer_ip, server_port)
+            client_program(conn, peer_ip, server_port, router_addr, router_port, request)
 
         except socket.timeout:
             print('No response after {}s'.format(timeout))
@@ -101,6 +90,7 @@ parser.add_argument("--routerport", help="router port", type=int, default=3000)
 
 parser.add_argument("--serverhost", help="server host", default="localhost")
 parser.add_argument("--serverport", help="server port", type=int, default=8007)
+
 args = parser.parse_args()
 
 run_client(args.routerhost, args.routerport, args.serverhost, args.serverport)
